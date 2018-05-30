@@ -28,6 +28,24 @@ spec:
   selector:
     app: hdfs-namenode
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  # This name uniquely identifies the PVC. Will be used in deployment below.
+  name: hdfs-name-volume-claim
+  labels:
+    app: hdfs-name-storage-claim
+spec:
+  # Read more about access modes here: http://kubernetes.io/docs/user-guide/persistent-volumes/#access-modes
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    # This is the request for storage. Should be available in the cluster.
+    requests:
+      storage: 5Gi
+  # Uncomment and add storageClass specific to your requirements below. Read more https://kubernetes.io/docs/concepts/storage/persistent-volumes/#class-1
+  #storageClassName:
+---
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
@@ -59,6 +77,8 @@ spec:
             {{- end }}
             - name: HDFS_CONF_dfs_namenode_datanode_registration_ip___hostname___check
               value: "false"
+            - name: CORE_CONF_hadoop_http_staticuser_user
+              value: root
             - name: CLUSTER_NAME
               value: hdfs-k8s
           ports:
@@ -74,5 +94,5 @@ spec:
       restartPolicy: Always
       volumes:
         - name: hdfs-name
-          hostPath:
-            path: {{ .Values.nameNodeHostPath }}
+          persistentVolumeClaim:
+            claimName: hdfs-name-volume-claim

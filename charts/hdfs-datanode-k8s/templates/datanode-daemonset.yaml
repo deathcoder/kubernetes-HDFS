@@ -15,6 +15,26 @@
 
 # Deleting a daemonset may need some trick. See
 # https://github.com/kubernetes/kubernetes/issues/33245#issuecomment-261250489
+{{- range $index, $path := .Values.dataNodeHostPath }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  # This name uniquely identifies the PVC. Will be used in deployment below.
+  name: hdfs-data-volume-claim-{{ $index }}
+  labels:
+    app: hdfs-name-storage-claim-{{ $index }}
+spec:
+  # Read more about access modes here: http://kubernetes.io/docs/user-guide/persistent-volumes/#access-modes
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    # This is the request for storage. Should be available in the cluster.
+    requests:
+      storage: 5Gi
+  # Uncomment and add storageClass specific to your requirements below. Read more https://kubernetes.io/docs/concepts/storage/persistent-volumes/#class-1
+  #storageClassName:
+---
+{{- end }}
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
@@ -175,8 +195,8 @@ spec:
       volumes:
         {{- range $index, $path := .Values.dataNodeHostPath }}
         - name: hdfs-data-{{ $index }}
-          hostPath:
-            path: {{ $path }}
+          persistentVolumeClaim:
+            claimName: hdfs-data-volume-claim-{{ $index }}
         {{- end }}
         {{- if .Values.kerberosEnabled }}
         - name: kerberos-config
